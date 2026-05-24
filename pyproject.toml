@@ -1,0 +1,16 @@
+[project]
+name = "hackto-2026-team-28"
+version = "0.1.0"
+description = "MCP server that renders interactive UIs within Claude/ChatGPT"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp[apps]>=3",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "fastmcp[apps]>=3",
+]
