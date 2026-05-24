@@ -1,10 +1,13 @@
-export interface Member {
+export interface Product {
+  id: string;
   name: string;
-  role: string;
-  office: string;
+  category: string;
+  price: number;
+  imageUrl: string;
+  description: string;
 }
 
-export interface TeamDirectoryData {
-  type: "team-directory";
-  members: Member[];
+export interface NikeCatalogData {
+  type: "nike-catalog";
+  products: Product[];
 }

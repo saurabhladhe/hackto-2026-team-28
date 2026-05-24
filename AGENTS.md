@@ -48,7 +48,7 @@ server.py (FastMCP)          ui/ (Vite + React + TypeScript)
 ```python
 from mcp import types
 from fastmcp import FastMCP
-from fastmcp.apps import AppConfig
+from fastmcp.apps import AppConfig, ResourceCSP
 from fastmcp.tools import ToolResult
 
 mcp = FastMCP("My Server")
@@ -56,15 +56,17 @@ mcp = FastMCP("My Server")
 VIEW_URI = "ui://my-app/view.html"
 
 @mcp.tool(app=AppConfig(resource_uri=VIEW_URI))
-def my_tool(query: str) -> ToolResult:
-    """Description the model sees."""
-    data = do_work(query)
+def nike_catalog() -> ToolResult:
+    """Browse Nike products."""
     return ToolResult(
-        content=[types.TextContent(type="text", text=json.dumps(data))],
-        structured_content={"type": "my-data", "items": data},
+        content=[types.TextContent(type="text", text=json.dumps(products))],
+        structured_content={"type": "nike-catalog", "products": products},
     )
 
-@mcp.resource(VIEW_URI)
+@mcp.resource(
+    VIEW_URI,
+    app=AppConfig(csp=ResourceCSP(resource_domains=["https://static.nike.com"])),
+)
 def view() -> str:
     """MCP App UI built with Vite."""
     return Path("ui/dist/mcp-app.html").read_text(encoding="utf-8")
