@@ -1,6 +1,12 @@
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+_load_dotenv_path = Path(__file__).parent / ".env"
+if _load_dotenv_path.exists():
+    load_dotenv(_load_dotenv_path)
+
 from mcp import types
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig, ResourceCSP
@@ -184,7 +190,13 @@ def nike_catalog() -> ToolResult:
 
 @mcp.resource(
     VIEW_URI,
-    app=AppConfig(csp=ResourceCSP(resource_domains=["https://static.nike.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"])),
+    app=AppConfig(csp=ResourceCSP(resource_domains=[
+        "https://static.nike.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://checkout.stripe.com",
+        "https://js.stripe.com",
+    ])),
 )
 def app_view() -> str:
     """MCP App UI built with Vite."""
@@ -192,3 +204,7 @@ def app_view() -> str:
     if not html_path.exists():
         return "<html><body><p>UI not built. Run: cd ui && npm run build</p></body></html>"
     return html_path.read_text(encoding="utf-8")
+
+
+from stripe.stripepay import register as register_stripe
+register_stripe(mcp)

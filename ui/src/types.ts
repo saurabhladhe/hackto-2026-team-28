@@ -20,3 +20,18 @@ export interface NikeCatalogData {
   type: "nike-catalog";
   products: Product[];
 }
+
+export interface CheckoutItem {
+  product: Product;
+  size: string;
+  quantity: number;
+}
+
+export interface NikeCheckoutData {
+  type: "nike-checkout";
+  items: CheckoutItem[];
+  checkoutUrl: string;
+  stripePaymentLinkId: string;
+}
+
+export type AppData = NikeCatalogData | NikeCheckoutData;

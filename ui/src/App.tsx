@@ -1,14 +1,18 @@
 import { useState, useMemo, useCallback } from "react";
-import type { NikeCatalogData, Product, ProductColor } from "./types";
+import { App as McpApp } from "@modelcontextprotocol/ext-apps";
+import type { AppData, NikeCheckoutData, Product, ProductColor } from "./types";
 
 interface AppProps {
-  data: NikeCatalogData | null;
+  data: AppData | null;
+  mcpApp: McpApp;
 }
 
 type View =
   | { name: "list" }
   | { name: "detail"; product: Product }
-  | { name: "cart" };
+  | { name: "cart" }
+  | { name: "checkout-loading" }
+  | { name: "checkout" };
 
 interface CartItem {
   product: Product;
@@ -365,11 +369,15 @@ function CartView({
   onBack,
   onRemove,
   onUpdateQty,
+  onCheckout,
+  checkingOut,
 }: {
   items: CartItem[];
   onBack: () => void;
   onRemove: (idx: number) => void;
   onUpdateQty: (idx: number, qty: number) => void;
+  onCheckout: () => void;
+  checkingOut: boolean;
 }) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const estimatedTax = items.length > 0 ? Math.round(subtotal * 0.13) : 0;
@@ -460,7 +468,20 @@ function CartView({
               <div style={{ borderTop: "1px solid #ddd", margin: "12px 0", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 600 }}>
                 <span style={{ color: "#111" }}>Total</span><span style={{ color: "#111" }}>${total}</span>
               </div>
-              <button style={{ width: "100%", padding: "14px 0", background: "#111", color: "#fff", border: "none", borderRadius: "30px", fontSize: "15px", fontWeight: 600, cursor: "pointer", marginTop: "8px" }}>Checkout</button>
+              <button
+                onClick={onCheckout}
+                disabled={checkingOut}
+                style={{
+                  width: "100%", padding: "14px 0",
+                  background: checkingOut ? "#999" : "#111",
+                  color: "#fff", border: "none", borderRadius: "30px",
+                  fontSize: "15px", fontWeight: 600,
+                  cursor: checkingOut ? "not-allowed" : "pointer",
+                  marginTop: "8px",
+                }}
+              >
+                {checkingOut ? "Processing..." : "Checkout"}
+              </button>
               <p style={{ fontSize: "11px", color: "#888", textAlign: "center", marginTop: "12px" }}>Free delivery and returns on all orders.</p>
             </div>
           </div>
@@ -470,14 +491,115 @@ function CartView({
   );
 }
 
+/* ---------- Checkout View ---------- */
+function CheckoutView({
+  data,
+  mcpApp,
+  onBack,
+}: {
+  data: NikeCheckoutData;
+  mcpApp: McpApp;
+  onBack: () => void;
+}) {
+  const [paid, setPaid] = useState(false);
+  const total = data.items.reduce((s, item) => s + item.product.price * item.quantity, 0);
+
+  const handlePay = useCallback(async () => {
+    try {
+      await mcpApp.openLink({ url: data.checkoutUrl });
+      setPaid(true);
+    } catch (err) {
+      console.error("Failed to open Stripe checkout:", err);
+    }
+  }, [mcpApp, data.checkoutUrl]);
+
+  return (
+    <div style={{ color: "#111", background: "#fff", minHeight: "100vh" }}>
+      <div style={{ borderBottom: "1px solid #e5e5e5", background: "#fff" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", height: "56px" }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#111", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Continue Shopping
+          </button>
+          <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#111" }}>NIKE</span>
+          <div style={{ width: "120px" }} />
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "600px", margin: "48px auto", padding: "0 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.5" style={{ marginBottom: "12px" }}>
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+          </svg>
+          <h1 style={{ fontSize: "28px", fontWeight: 600, marginBottom: "8px" }}>Complete Your Purchase</h1>
+          <p style={{ color: "#555" }}>Review your order and pay securely with Stripe.</p>
+        </div>
+
+        <div style={{ background: "#f5f5f5", borderRadius: "12px", padding: "24px", marginBottom: "24px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px" }}>Order Summary</h3>
+          {data.items.map((item, idx) => (
+            <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: idx < data.items.length - 1 ? "1px solid #ddd" : "none" }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: "14px", fontWeight: 600 }}>{item.product.name}</p>
+                <p style={{ fontSize: "12px", color: "#555" }}>Size: {item.size} | Qty: {item.quantity}</p>
+              </div>
+              <p style={{ fontSize: "14px", fontWeight: 600, whiteSpace: "nowrap" }}>${item.product.price * item.quantity}</p>
+            </div>
+          ))}
+          <div style={{ borderTop: "2px solid #111", marginTop: "12px", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 700 }}>
+            <span>Total</span>
+            <span>${total}</span>
+          </div>
+        </div>
+
+        {paid ? (
+          <div style={{ background: "#e8f5e9", borderRadius: "12px", padding: "24px", textAlign: "center" }}>
+            <p style={{ fontSize: "16px", fontWeight: 600, color: "#2e7d32", marginBottom: "8px" }}>
+              Stripe Checkout opened in a new tab.
+            </p>
+            <p style={{ fontSize: "13px", color: "#555" }}>
+              Complete payment there. Once done, you can close this tab and return to the conversation.
+            </p>
+          </div>
+        ) : (
+          <button onClick={handlePay} style={{
+            width: "100%", padding: "16px 0",
+            background: "#111", color: "#fff",
+            border: "none", borderRadius: "30px",
+            fontSize: "16px", fontWeight: 600,
+            cursor: "pointer",
+          }}>
+            Pay with Stripe — ${total}
+          </button>
+        )}
+
+        <p style={{ fontSize: "12px", color: "#888", textAlign: "center", marginTop: "16px" }}>
+          Secured by Stripe. Your payment info is processed directly by Stripe.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- App Shell ---------- */
-export default function App({ data }: AppProps) {
+export default function App({ data, mcpApp }: AppProps) {
   const [view, setView] = useState<View>({ name: "list" });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [addedMessage, setAddedMessage] = useState<string | null>(null);
-  const products = data?.products ?? [];
+  const [checkoutData, setCheckoutData] = useState<NikeCheckoutData | null>(
+    data?.type === "nike-checkout" ? data : null
+  );
+
+  const catalogData = data?.type === "nike-catalog" ? data : null;
+  const products = catalogData?.products ?? [];
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+
+  // When data prop changes to checkout data (from ontoolresult), store it
+  if (data?.type === "nike-checkout" && data !== checkoutData) {
+    setCheckoutData(data);
+    setView({ name: "checkout" });
+  }
 
   const addToCart = useCallback((product: Product, size: string, color: ProductColor) => {
     setCart((prev) => {
@@ -496,18 +618,61 @@ export default function App({ data }: AppProps) {
   const removeFromCart = useCallback((idx: number) => setCart((prev) => prev.filter((_, i) => i !== idx)), []);
   const updateQty = useCallback((idx: number, qty: number) => setCart((prev) => { const n = [...prev]; n[idx] = { ...n[idx], quantity: qty }; return n; }), []);
 
+  const handleCheckout = useCallback(async () => {
+    setView({ name: "checkout-loading" });
+    try {
+      const items = cart.map((item) => ({
+        product_id: item.product.id,
+        size: item.size,
+        quantity: item.quantity,
+      }));
+      const result = await mcpApp.callServerTool({
+        name: "start_checkout",
+        arguments: { items },
+      });
+      const textContent = result.content?.[0];
+      if (textContent?.type === "text" && textContent.text) {
+        const parsed = JSON.parse(textContent.text) as NikeCheckoutData;
+        if (parsed.type === "nike-checkout") {
+          setCheckoutData(parsed);
+          setView({ name: "checkout" });
+          return;
+        }
+      }
+      throw new Error("Unexpected response format");
+    } catch (err) {
+      console.error("Checkout failed:", err);
+      setView({ name: "cart" });
+    }
+  }, [cart, mcpApp]);
+
   const content = useMemo(() => {
-    if (!data?.products) {
+    if (!data) {
       return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }}><p style={{ color: "#999", fontSize: "16px" }}>Loading products...</p></div>;
     }
     if (view.name === "detail") {
       return <><TopNav cartCount={cartCount} onCartClick={() => setView({ name: "cart" })} /><ProductDetail product={view.product} onBack={() => setView({ name: "list" })} onAddToCart={(size, color) => addToCart(view.product, size, color)} addedMessage={addedMessage} /><Footer /></>;
     }
     if (view.name === "cart") {
-      return <><CartView items={cart} onBack={() => setView({ name: "list" })} onRemove={removeFromCart} onUpdateQty={updateQty} /><Footer /></>;
+      return <><CartView items={cart} onBack={() => setView({ name: "list" })} onRemove={removeFromCart} onUpdateQty={updateQty} onCheckout={handleCheckout} checkingOut={false} /><Footer /></>;
+    }
+    if (view.name === "checkout-loading") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff", flexDirection: "column", gap: "16px" }}>
+          <div style={{ width: "40px", height: "40px", border: "4px solid #eee", borderTop: "4px solid #111", borderRadius: "50%", animation: "nike-spin 0.8s linear infinite" }} />
+          <p style={{ color: "#555", fontSize: "16px" }}>Preparing your checkout...</p>
+          <style>{`@keyframes nike-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      );
+    }
+    if (view.name === "checkout") {
+      if (!checkoutData) {
+        return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }}><p style={{ color: "#999", fontSize: "16px" }}>No checkout data available.</p></div>;
+      }
+      return <CheckoutView data={checkoutData} mcpApp={mcpApp} onBack={() => setView({ name: "cart" })} />;
     }
     return <><TopNav cartCount={cartCount} onCartClick={() => setView({ name: "cart" })} /><ProductList products={products} onSelect={(product) => setView({ name: "detail", product })} /><Footer /></>;
-  }, [data, view, cart, cartCount, addedMessage, addToCart, removeFromCart, updateQty]);
+  }, [data, view, cart, cartCount, addedMessage, addToCart, removeFromCart, updateQty, handleCheckout, mcpApp, checkoutData]);
 
   return <div style={{ background: "#fff", minHeight: "100vh" }}>
     <style>{responsiveCSS}</style>

@@ -110,7 +110,7 @@ function ProductDetail({ product, onBack, onAddToCart, addedMessage, }) {
                                 }, disabled: !selectedSize, children: selectedSize ? "Add to Bag" : "Select a Size" }), addedMessage && (_jsx("p", { style: { fontSize: "13px", color: "#228B22", fontWeight: 500, textAlign: "center", marginBottom: "12px" }, children: addedMessage })), _jsx("p", { style: { fontSize: "15px", color: "#444", lineHeight: 1.6, marginBottom: "24px" }, children: product.description }), _jsxs("div", { style: { borderTop: "1px solid #e5e5e5", paddingTop: "16px" }, children: [_jsx("p", { style: { fontSize: "14px", fontWeight: 600, marginBottom: "8px" }, children: "Features" }), _jsx("ul", { style: { paddingLeft: "20px", fontSize: "14px", color: "#555", lineHeight: 1.8 }, children: product.features.map((f, i) => _jsx("li", { children: f }, i)) })] })] })] })] }));
 }
 /* ---------- Cart View ---------- */
-function CartView({ items, onBack, onRemove, onUpdateQty, }) {
+function CartView({ items, onBack, onRemove, onUpdateQty, onCheckout, checkingOut, }) {
     const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const estimatedTax = items.length > 0 ? Math.round(subtotal * 0.13) : 0;
     const total = subtotal + estimatedTax;
@@ -119,15 +119,50 @@ function CartView({ items, onBack, onRemove, onUpdateQty, }) {
     if (items.length === 0) {
         return (_jsxs("div", { style: { color: "#111", background: "#fff", minHeight: "100vh" }, children: [_jsx("div", { style: { borderBottom: "1px solid #e5e5e5", background: "#fff" }, children: _jsx("div", { style: { maxWidth: "1440px", margin: "0 auto", display: "flex", alignItems: "center", padding: "0 48px", height: "56px" }, children: _jsxs("button", { onClick: onBack, style: { background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#111", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }, children: [_jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#111", strokeWidth: "2", children: _jsx("path", { d: "M19 12H5M12 19l-7-7 7-7" }) }), "Back"] }) }) }), _jsxs("div", { style: { maxWidth: "800px", margin: "80px auto", textAlign: "center" }, children: [_jsxs("svg", { width: "48", height: "48", viewBox: "0 0 24 24", fill: "none", stroke: "#ccc", strokeWidth: "1.5", style: { marginBottom: "16px" }, children: [_jsx("path", { d: "M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" }), _jsx("path", { d: "M3 6h18" }), _jsx("path", { d: "M16 10a4 4 0 01-8 0" })] }), _jsx("h2", { style: { fontSize: "22px", fontWeight: 600, marginBottom: "8px", color: "#111" }, children: "Your Bag is Empty" }), _jsx("p", { style: { color: "#555", marginBottom: "24px" }, children: "Looks like you haven't added anything yet." }), _jsx("button", { onClick: onBack, style: { background: "#111", color: "#fff", border: "none", borderRadius: "30px", padding: "12px 28px", fontSize: "15px", fontWeight: 600, cursor: "pointer" }, children: "Continue Shopping" })] })] }));
     }
-    return (_jsxs("div", { style: { color: "#111", background: "#fff", minHeight: "100vh" }, children: [_jsx("div", { style: { borderBottom: "1px solid #e5e5e5", background: "#fff" }, children: _jsxs("div", { style: { maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", height: "56px" }, children: [_jsxs("button", { onClick: onBack, style: { background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#111", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }, children: [_jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#111", strokeWidth: "2", children: _jsx("path", { d: "M19 12H5M12 19l-7-7 7-7" }) }), "Continue Shopping"] }), _jsx("span", { style: { fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#111" }, children: "NIKE" }), _jsx("div", { style: { width: "120px" } })] }) }), _jsxs("div", { className: "nike-cart-inner", style: { maxWidth: "1200px", margin: "0 auto", padding: "32px 48px" }, children: [_jsxs("h1", { style: { fontSize: "28px", fontWeight: 600, marginBottom: "24px", color: "#111" }, children: ["Bag (", items.reduce((s, i) => s + i.quantity, 0), " Items)"] }), _jsxs("div", { className: "nike-cart-layout", style: { display: "flex", gap: "48px", alignItems: "flex-start" }, children: [_jsx("div", { className: "nike-cart-items", style: { flex: "2", minWidth: 0 }, children: items.map((item, idx) => (_jsxs("div", { className: "nike-cart-item", style: { display: "flex", gap: "16px", padding: "16px 0", borderBottom: "1px solid #e5e5e5" }, children: [_jsx("div", { className: "nike-cart-item-img", style: { width: "120px", height: "120px", background: "#f5f5f5", borderRadius: "4px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }, children: _jsx("img", { src: item.product.gallery[0], alt: item.product.name, style: { width: "85%", height: "85%", objectFit: "contain", mixBlendMode: "multiply" } }) }), _jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }, children: [_jsxs("div", { children: [_jsx("p", { style: { fontSize: "16px", fontWeight: 600, color: "#111", marginBottom: "2px" }, children: item.product.name }), _jsx("p", { style: { fontSize: "13px", color: "#555", marginBottom: "2px" }, children: item.product.category }), _jsxs("p", { style: { fontSize: "13px", color: "#555" }, children: ["Size: ", item.size, " | Colour: ", item.color.name] })] }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }, children: [_jsxs("div", { style: { display: "flex", alignItems: "center", gap: "12px" }, children: [_jsx("select", { value: item.quantity, onChange: (e) => onUpdateQty(idx, Number(e.target.value)), style: { padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "14px", background: "#fff", color: "#111" }, children: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (_jsx("option", { value: n, children: n }, n))) }), _jsx("button", { onClick: () => onRemove(idx), style: { background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "#555", textDecoration: "underline" }, children: "Remove" })] }), _jsxs("p", { style: { fontSize: "16px", fontWeight: 600, color: "#111" }, children: ["$", item.product.price * item.quantity] })] })] })] }, idx))) }), _jsx("div", { className: "nike-cart-summary", style: { flex: "1", maxWidth: "320px", minWidth: 0 }, children: _jsxs("div", { style: { background: "#f5f5f5", borderRadius: "8px", padding: "24px", position: "sticky", top: "24px" }, children: [_jsx("h3", { style: { fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "#111" }, children: "Summary" }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "8px" }, children: [_jsx("span", { style: labelSx, children: "Subtotal" }), _jsxs("span", { style: valueSx, children: ["$", subtotal] })] }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "8px" }, children: [_jsx("span", { style: labelSx, children: "Estimated Tax" }), _jsxs("span", { style: valueSx, children: ["$", estimatedTax] })] }), _jsxs("div", { style: { borderTop: "1px solid #ddd", margin: "12px 0", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 600 }, children: [_jsx("span", { style: { color: "#111" }, children: "Total" }), _jsxs("span", { style: { color: "#111" }, children: ["$", total] })] }), _jsx("button", { style: { width: "100%", padding: "14px 0", background: "#111", color: "#fff", border: "none", borderRadius: "30px", fontSize: "15px", fontWeight: 600, cursor: "pointer", marginTop: "8px" }, children: "Checkout" }), _jsx("p", { style: { fontSize: "11px", color: "#888", textAlign: "center", marginTop: "12px" }, children: "Free delivery and returns on all orders." })] }) })] })] })] }));
+    return (_jsxs("div", { style: { color: "#111", background: "#fff", minHeight: "100vh" }, children: [_jsx("div", { style: { borderBottom: "1px solid #e5e5e5", background: "#fff" }, children: _jsxs("div", { style: { maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", height: "56px" }, children: [_jsxs("button", { onClick: onBack, style: { background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#111", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }, children: [_jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#111", strokeWidth: "2", children: _jsx("path", { d: "M19 12H5M12 19l-7-7 7-7" }) }), "Continue Shopping"] }), _jsx("span", { style: { fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#111" }, children: "NIKE" }), _jsx("div", { style: { width: "120px" } })] }) }), _jsxs("div", { className: "nike-cart-inner", style: { maxWidth: "1200px", margin: "0 auto", padding: "32px 48px" }, children: [_jsxs("h1", { style: { fontSize: "28px", fontWeight: 600, marginBottom: "24px", color: "#111" }, children: ["Bag (", items.reduce((s, i) => s + i.quantity, 0), " Items)"] }), _jsxs("div", { className: "nike-cart-layout", style: { display: "flex", gap: "48px", alignItems: "flex-start" }, children: [_jsx("div", { className: "nike-cart-items", style: { flex: "2", minWidth: 0 }, children: items.map((item, idx) => (_jsxs("div", { className: "nike-cart-item", style: { display: "flex", gap: "16px", padding: "16px 0", borderBottom: "1px solid #e5e5e5" }, children: [_jsx("div", { className: "nike-cart-item-img", style: { width: "120px", height: "120px", background: "#f5f5f5", borderRadius: "4px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }, children: _jsx("img", { src: item.product.gallery[0], alt: item.product.name, style: { width: "85%", height: "85%", objectFit: "contain", mixBlendMode: "multiply" } }) }), _jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }, children: [_jsxs("div", { children: [_jsx("p", { style: { fontSize: "16px", fontWeight: 600, color: "#111", marginBottom: "2px" }, children: item.product.name }), _jsx("p", { style: { fontSize: "13px", color: "#555", marginBottom: "2px" }, children: item.product.category }), _jsxs("p", { style: { fontSize: "13px", color: "#555" }, children: ["Size: ", item.size, " | Colour: ", item.color.name] })] }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }, children: [_jsxs("div", { style: { display: "flex", alignItems: "center", gap: "12px" }, children: [_jsx("select", { value: item.quantity, onChange: (e) => onUpdateQty(idx, Number(e.target.value)), style: { padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "14px", background: "#fff", color: "#111" }, children: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (_jsx("option", { value: n, children: n }, n))) }), _jsx("button", { onClick: () => onRemove(idx), style: { background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "#555", textDecoration: "underline" }, children: "Remove" })] }), _jsxs("p", { style: { fontSize: "16px", fontWeight: 600, color: "#111" }, children: ["$", item.product.price * item.quantity] })] })] })] }, idx))) }), _jsx("div", { className: "nike-cart-summary", style: { flex: "1", maxWidth: "320px", minWidth: 0 }, children: _jsxs("div", { style: { background: "#f5f5f5", borderRadius: "8px", padding: "24px", position: "sticky", top: "24px" }, children: [_jsx("h3", { style: { fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "#111" }, children: "Summary" }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "8px" }, children: [_jsx("span", { style: labelSx, children: "Subtotal" }), _jsxs("span", { style: valueSx, children: ["$", subtotal] })] }), _jsxs("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "8px" }, children: [_jsx("span", { style: labelSx, children: "Estimated Tax" }), _jsxs("span", { style: valueSx, children: ["$", estimatedTax] })] }), _jsxs("div", { style: { borderTop: "1px solid #ddd", margin: "12px 0", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 600 }, children: [_jsx("span", { style: { color: "#111" }, children: "Total" }), _jsxs("span", { style: { color: "#111" }, children: ["$", total] })] }), _jsx("button", { onClick: onCheckout, disabled: checkingOut, style: {
+                                                width: "100%", padding: "14px 0",
+                                                background: checkingOut ? "#999" : "#111",
+                                                color: "#fff", border: "none", borderRadius: "30px",
+                                                fontSize: "15px", fontWeight: 600,
+                                                cursor: checkingOut ? "not-allowed" : "pointer",
+                                                marginTop: "8px",
+                                            }, children: checkingOut ? "Processing..." : "Checkout" }), _jsx("p", { style: { fontSize: "11px", color: "#888", textAlign: "center", marginTop: "12px" }, children: "Free delivery and returns on all orders." })] }) })] })] })] }));
+}
+/* ---------- Checkout View ---------- */
+function CheckoutView({ data, mcpApp, onBack, }) {
+    const [paid, setPaid] = useState(false);
+    const total = data.items.reduce((s, item) => s + item.product.price * item.quantity, 0);
+    const handlePay = useCallback(async () => {
+        try {
+            await mcpApp.openLink({ url: data.checkoutUrl });
+            setPaid(true);
+        }
+        catch (err) {
+            console.error("Failed to open Stripe checkout:", err);
+        }
+    }, [mcpApp, data.checkoutUrl]);
+    return (_jsxs("div", { style: { color: "#111", background: "#fff", minHeight: "100vh" }, children: [_jsx("div", { style: { borderBottom: "1px solid #e5e5e5", background: "#fff" }, children: _jsxs("div", { style: { maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", height: "56px" }, children: [_jsxs("button", { onClick: onBack, style: { background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#111", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }, children: [_jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: _jsx("path", { d: "M19 12H5M12 19l-7-7 7-7" }) }), "Continue Shopping"] }), _jsx("span", { style: { fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#111" }, children: "NIKE" }), _jsx("div", { style: { width: "120px" } })] }) }), _jsxs("div", { style: { maxWidth: "600px", margin: "48px auto", padding: "0 24px" }, children: [_jsxs("div", { style: { textAlign: "center", marginBottom: "32px" }, children: [_jsxs("svg", { width: "48", height: "48", viewBox: "0 0 24 24", fill: "none", stroke: "#111", strokeWidth: "1.5", style: { marginBottom: "12px" }, children: [_jsx("path", { d: "M12 2L2 7l10 5 10-5-10-5z" }), _jsx("path", { d: "M2 17l10 5 10-5" }), _jsx("path", { d: "M2 12l10 5 10-5" })] }), _jsx("h1", { style: { fontSize: "28px", fontWeight: 600, marginBottom: "8px" }, children: "Complete Your Purchase" }), _jsx("p", { style: { color: "#555" }, children: "Review your order and pay securely with Stripe." })] }), _jsxs("div", { style: { background: "#f5f5f5", borderRadius: "12px", padding: "24px", marginBottom: "24px" }, children: [_jsx("h3", { style: { fontSize: "16px", fontWeight: 600, marginBottom: "16px" }, children: "Order Summary" }), data.items.map((item, idx) => (_jsxs("div", { style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: idx < data.items.length - 1 ? "1px solid #ddd" : "none" }, children: [_jsxs("div", { style: { flex: 1 }, children: [_jsx("p", { style: { fontSize: "14px", fontWeight: 600 }, children: item.product.name }), _jsxs("p", { style: { fontSize: "12px", color: "#555" }, children: ["Size: ", item.size, " | Qty: ", item.quantity] })] }), _jsxs("p", { style: { fontSize: "14px", fontWeight: 600, whiteSpace: "nowrap" }, children: ["$", item.product.price * item.quantity] })] }, idx))), _jsxs("div", { style: { borderTop: "2px solid #111", marginTop: "12px", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: 700 }, children: [_jsx("span", { children: "Total" }), _jsxs("span", { children: ["$", total] })] })] }), paid ? (_jsxs("div", { style: { background: "#e8f5e9", borderRadius: "12px", padding: "24px", textAlign: "center" }, children: [_jsx("p", { style: { fontSize: "16px", fontWeight: 600, color: "#2e7d32", marginBottom: "8px" }, children: "Stripe Checkout opened in a new tab." }), _jsx("p", { style: { fontSize: "13px", color: "#555" }, children: "Complete payment there. Once done, you can close this tab and return to the conversation." })] })) : (_jsxs("button", { onClick: handlePay, style: {
+                            width: "100%", padding: "16px 0",
+                            background: "#111", color: "#fff",
+                            border: "none", borderRadius: "30px",
+                            fontSize: "16px", fontWeight: 600,
+                            cursor: "pointer",
+                        }, children: ["Pay with Stripe \u2014 $", total] })), _jsx("p", { style: { fontSize: "12px", color: "#888", textAlign: "center", marginTop: "16px" }, children: "Secured by Stripe. Your payment info is processed directly by Stripe." })] })] }));
 }
 /* ---------- App Shell ---------- */
-export default function App({ data }) {
+export default function App({ data, mcpApp }) {
     const [view, setView] = useState({ name: "list" });
     const [cart, setCart] = useState([]);
     const [addedMessage, setAddedMessage] = useState(null);
-    const products = data?.products ?? [];
+    const [checkoutData, setCheckoutData] = useState(data?.type === "nike-checkout" ? data : null);
+    const catalogData = data?.type === "nike-catalog" ? data : null;
+    const products = catalogData?.products ?? [];
     const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+    // When data prop changes to checkout data (from ontoolresult), store it
+    if (data?.type === "nike-checkout" && data !== checkoutData) {
+        setCheckoutData(data);
+        setView({ name: "checkout" });
+    }
     const addToCart = useCallback((product, size, color) => {
         setCart((prev) => {
             const existing = prev.findIndex((item) => item.product.id === product.id && item.size === size && item.color.name === color.name);
@@ -143,17 +178,54 @@ export default function App({ data }) {
     }, []);
     const removeFromCart = useCallback((idx) => setCart((prev) => prev.filter((_, i) => i !== idx)), []);
     const updateQty = useCallback((idx, qty) => setCart((prev) => { const n = [...prev]; n[idx] = { ...n[idx], quantity: qty }; return n; }), []);
+    const handleCheckout = useCallback(async () => {
+        setView({ name: "checkout-loading" });
+        try {
+            const items = cart.map((item) => ({
+                product_id: item.product.id,
+                size: item.size,
+                quantity: item.quantity,
+            }));
+            const result = await mcpApp.callServerTool({
+                name: "start_checkout",
+                arguments: { items },
+            });
+            const textContent = result.content?.[0];
+            if (textContent?.type === "text" && textContent.text) {
+                const parsed = JSON.parse(textContent.text);
+                if (parsed.type === "nike-checkout") {
+                    setCheckoutData(parsed);
+                    setView({ name: "checkout" });
+                    return;
+                }
+            }
+            throw new Error("Unexpected response format");
+        }
+        catch (err) {
+            console.error("Checkout failed:", err);
+            setView({ name: "cart" });
+        }
+    }, [cart, mcpApp]);
     const content = useMemo(() => {
-        if (!data?.products) {
+        if (!data) {
             return _jsx("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }, children: _jsx("p", { style: { color: "#999", fontSize: "16px" }, children: "Loading products..." }) });
         }
         if (view.name === "detail") {
             return _jsxs(_Fragment, { children: [_jsx(TopNav, { cartCount: cartCount, onCartClick: () => setView({ name: "cart" }) }), _jsx(ProductDetail, { product: view.product, onBack: () => setView({ name: "list" }), onAddToCart: (size, color) => addToCart(view.product, size, color), addedMessage: addedMessage }), _jsx(Footer, {})] });
         }
         if (view.name === "cart") {
-            return _jsxs(_Fragment, { children: [_jsx(CartView, { items: cart, onBack: () => setView({ name: "list" }), onRemove: removeFromCart, onUpdateQty: updateQty }), _jsx(Footer, {})] });
+            return _jsxs(_Fragment, { children: [_jsx(CartView, { items: cart, onBack: () => setView({ name: "list" }), onRemove: removeFromCart, onUpdateQty: updateQty, onCheckout: handleCheckout, checkingOut: false }), _jsx(Footer, {})] });
+        }
+        if (view.name === "checkout-loading") {
+            return (_jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff", flexDirection: "column", gap: "16px" }, children: [_jsx("div", { style: { width: "40px", height: "40px", border: "4px solid #eee", borderTop: "4px solid #111", borderRadius: "50%", animation: "nike-spin 0.8s linear infinite" } }), _jsx("p", { style: { color: "#555", fontSize: "16px" }, children: "Preparing your checkout..." }), _jsx("style", { children: `@keyframes nike-spin { to { transform: rotate(360deg); } }` })] }));
+        }
+        if (view.name === "checkout") {
+            if (!checkoutData) {
+                return _jsx("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }, children: _jsx("p", { style: { color: "#999", fontSize: "16px" }, children: "No checkout data available." }) });
+            }
+            return _jsx(CheckoutView, { data: checkoutData, mcpApp: mcpApp, onBack: () => setView({ name: "cart" }) });
         }
         return _jsxs(_Fragment, { children: [_jsx(TopNav, { cartCount: cartCount, onCartClick: () => setView({ name: "cart" }) }), _jsx(ProductList, { products: products, onSelect: (product) => setView({ name: "detail", product }) }), _jsx(Footer, {})] });
-    }, [data, view, cart, cartCount, addedMessage, addToCart, removeFromCart, updateQty]);
+    }, [data, view, cart, cartCount, addedMessage, addToCart, removeFromCart, updateQty, handleCheckout, mcpApp, checkoutData]);
     return _jsxs("div", { style: { background: "#fff", minHeight: "100vh" }, children: [_jsx("style", { children: responsiveCSS }), content] });
 }
