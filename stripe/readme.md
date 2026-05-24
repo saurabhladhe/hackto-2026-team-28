@@ -1,0 +1,1 @@
+This folder contains fucntionality for strip integration using mcp and agents 
