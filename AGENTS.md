@@ -1,6 +1,6 @@
 # hackto-2026-team-28 — MCP App Renderer
 
-Build an MCP server that renders interactive UIs (MCP Apps) within Claude/ChatGPT using FastMCP + Prefab.
+Build an MCP server that renders interactive UIs (MCP Apps) within Claude/ChatGPT using FastMCP + Vite.
 
 ## `fastmcp/` — reference only
 
@@ -9,77 +9,124 @@ Build an MCP server that renders interactive UIs (MCP Apps) within Claude/ChatGP
 
 | Source | What you'll find |
 | ------ | ---------------- |
-| `fastmcp/docs/apps/` | Everything about building app UIs (the main reference for this project) |
-| `fastmcp/docs/servers/` | Server concepts: tools, resources, prompts, middleware, auth |
-| `fastmcp/examples/` | Runnable example servers (especially `examples/apps/`) |
+| `fastmcp/docs/apps/low-level.mdx` | Custom HTML apps (our approach) |
+| `fastmcp/docs/apps/architecture.mdx` | How MCP Apps work under the hood |
+| `fastmcp/docs/servers/` | Server concepts: tools, resources, prompts, auth |
+| `fastmcp/examples/` | Runnable example servers |
 | `fastmcp/README.md` | High-level framework overview |
-| `fastmcp/pyproject.toml` | FastMCP's own build config (dep list, tool config) |
-| `fastmcp/CLAUDE.md` | FastMCP's development guidelines (symlinked from `fastmcp/AGENTS.md`) |
+| `fastmcp/CLAUDE.md` | FastMCP's development guidelines |
 
-The upstream docs are also at [gofastmcp.com](https://gofastmcp.com) (with `llms.txt` / `llms-full.txt` for LLM consumption).
+Upstream docs at [gofastmcp.com](https://gofastmcp.com) (with `llms.txt` / `llms-full.txt` for LLM consumption).
+Official MCP Apps spec + SDK at [github.com/modelcontextprotocol/ext-apps](https://github.com/modelcontextprotocol/ext-apps).
+
+## Architecture
+
+```
+server.py (FastMCP)          ui/ (Vite + React + TypeScript)
+┌──────────────────┐         ┌──────────────────────────────┐
+│ @mcp.tool(       │ ──data──│ src/main.tsx — App SDK       │
+│   app=AppConfig( │ ←─HTML──│   connects to host iframe    │
+│     resource_uri │         │ src/App.tsx — React component│
+│   )              │         │   renders tool data          │
+│ )                │         │                              │
+│ @mcp.resource(   │         │ dist/mcp-app.html            │
+│   "ui://..."     │         │   self-contained HTML bundle │
+│ )                │         └──────────────────────────────┘
+│                  │         Host (Claude Desktop / ChatGPT)
+│ ToolResult(      │         ┌──────────────────────────────┐
+│   content,       │ ───────→│ sandboxed iframe             │
+│   structured_    │         │ postMessage JSON-RPC via     │
+│   content        │         │ @modelcontextprotocol/ext-   │
+│ )                │         │ apps App class               │
+└──────────────────┘         └──────────────────────────────┘
+```
 
 ## Core patterns
 
-### Interactive tool (simple UIs — charts, tables, dashboards)
+### Tool + UI resource
 
 ```python
+from mcp import types
 from fastmcp import FastMCP
+from fastmcp.apps import AppConfig
+from fastmcp.tools import ToolResult
 
-mcp = FastMCP("My App")
+mcp = FastMCP("My Server")
 
-@mcp.tool(app=True)
-def my_dashboard() -> DataTable:
+VIEW_URI = "ui://my-app/view.html"
+
+@mcp.tool(app=AppConfig(resource_uri=VIEW_URI))
+def my_tool(query: str) -> ToolResult:
     """Description the model sees."""
-    return DataTable(columns=[...], rows=[...], search=True)
+    data = do_work(query)
+    return ToolResult(
+        content=[types.TextContent(type="text", text=json.dumps(data))],
+        structured_content={"type": "my-data", "items": data},
+    )
+
+@mcp.resource(VIEW_URI)
+def view() -> str:
+    """MCP App UI built with Vite."""
+    return Path("ui/dist/mcp-app.html").read_text(encoding="utf-8")
 ```
 
-### FastMCPApp (UIs that call back to the server — forms, search, CRUD)
+### UI app (Vite + React + ext-apps SDK)
 
-```python
-from fastmcp import FastMCP, FastMCPApp
-from prefab_ui.actions.mcp import CallTool
-from prefab_ui.rx import RESULT
+```typescript
+import { App } from "@modelcontextprotocol/ext-apps";
+import MyComponent from "./MyComponent";
 
-app = FastMCPApp("My App")
+const app = new App({ name: "my-app", version: "1.0.0" });
 
-@app.tool()
-def save_item(data: dict) -> list[dict]:
-    """Backend tool — not model-visible by default."""
-    ...
+app.ontoolresult = (result) => {
+  const data = (result as any).structuredContent ?? null;
+  createRoot(document.getElementById("root")!).render(<MyComponent data={data} />);
+};
 
-@app.ui()
-def my_app() -> PrefabApp:
-    """Entry point — model-visible."""
-    with Form(on_submit=CallTool("save_item", on_success=SetState("items", RESULT))):
-        ...
-    return PrefabApp(view=view, state={"items": [...]})
-
-mcp = FastMCP("Server", providers=[app])
+app.connect();
 ```
 
 ### Dev preview
 
 ```bash
-pip install "fastmcp[apps]"
-fastmcp dev apps server.py
-# Opens http://localhost:8080 — pick a tool, fill args, see the rendered UI
+cd ui && npm run build    # rebuild UI bundle
+cd .. && fastmcp dev apps server.py
+# Opens http://localhost:8080 — pick a tool, see the rendered UI
 ```
 
 ## Key imports
 
 ```python
-from fastmcp import FastMCP, FastMCPApp
-from prefab_ui.app import PrefabApp
-from prefab_ui.components import Column, DataTable, DataTableColumn, Grid, ...
-from prefab_ui.actions import SetState, ShowToast
-from prefab_ui.actions.mcp import CallTool
-from prefab_ui.rx import Rx, STATE, RESULT
+from fastmcp import FastMCP
+from fastmcp.apps import AppConfig, ResourceCSP
+from fastmcp.tools import ToolResult
+from mcp import types
 ```
 
-Full component reference at [prefab.prefect.io/docs/components](https://prefab.prefect.io/docs/components).
+```typescript
+import { App } from "@modelcontextprotocol/ext-apps";
+```
 
-## Project setup
+## Build & run
 
-- Use `uv` for dependency management
-- Project lives at repo root (not inside `fastmcp/`)
-- Need `pip install "fastmcp[apps]"` for app tools with Prefab UIs
+- **UI**: `cd ui && npm run build` — produces `ui/dist/mcp-app.html` (self-contained)
+- **Server**: `fastmcp dev apps server.py` — dev preview at `http://localhost:8080`
+- **Claude Desktop**: `fastmcp run server.py` via stdio (see README for config)
+- **Deps**: `uv sync` for Python, `npm install` in `ui/` for Node
+
+## Project structure
+
+| Path | Purpose |
+| ---- | ------- |
+| `server.py` | FastMCP server — tools + `ui://` resource |
+| `ui/` | Vite + React + TypeScript app |
+| `ui/src/App.tsx` | React component that renders tool data |
+| `ui/src/main.tsx` | Entry point — App SDK init + connect |
+| `ui/dist/mcp-app.html` | Built artifact (auto-generated, do not edit) |
+| `fastmcp/` | Upstream FastMCP reference (read-only) |
+
+## Rules
+
+- First build the UI (`npm run build` in `ui/`) before starting the server
+- Never edit `fastmcp/` — it's a read-only copy of upstream
+- Never edit `ui/dist/` — it's auto-generated by the Vite build
